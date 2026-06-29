@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\Brand;
+use App\Models\BrandModel;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -22,6 +24,15 @@ class DatabaseSeeder extends Seeder
             'email' => 'testuser@testuser.com',
             'password' => '123456',
             'admin' => 1
+        ]);
+
+
+        $bmw = Brand::factory()->create([
+            'name' => 'BMW',
+        ]);
+
+        $bmw->models()->create([
+            'name' => '325i',
         ]);
     }
 }
