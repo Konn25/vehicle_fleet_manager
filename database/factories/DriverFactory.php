@@ -21,8 +21,8 @@ class DriverFactory extends Factory
             'name' => fake()->firstNameMale(),
             'email' => fake()->email(),
             'phone' => fake()->phoneNumber(),
-            'age' => fake()->random_int(18, 56),
-            'actual_vehicle' => fake()->random_int(1, 44)
+            'age' => fake()->numberBetween(18, 56),
+            'actual_vehicle' => fake()->numberBetween(1, 44)
         ];
     }
 }
