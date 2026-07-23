@@ -7,73 +7,77 @@ use Illuminate\Http\Request;
 
 class VehicleController extends Controller
 {
+    /**
+     * Display a listing of the resource.
+     */
     public function index()
     {
-        return Vehicle::with([
+        $vehicles = Vehicle::with([
             'brand',
             'fuelType',
         ])->get();
+
+        return view('vehicles.index', compact('vehicles'));
     }
 
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        //
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store()
+    {
+        //
+    }
+
+    /**
+     * Display the specified resource.
+     */
     public function show(Vehicle $vehicle)
     {
-        return $vehicle->load([
-            'brand',
-            'fuelType',
-        ]);
+        //
     }
 
-    public function store(Request $request)
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(Vehicle $vehicle)
     {
-        $validated = $request->validate([
-            'brand_id' => ['required', 'exists:brands,id'],
-            'year' => ['required', 'integer', 'min:1900', 'max:' . now()->year],
-            'fuel_type_id' => ['required', 'exists:fuel_types,id'],
-            'engine_type' => ['required', 'string'],
-            'tank_capacity' => ['required', 'integer', 'min:0'],
-            'km' => ['required', 'integer', 'min:0'],
-            'license_plate' => ['required', 'string', 'max:20'],
-            'state' => ['required', 'string'],
-            'insurance_expiration' => ['required', 'date'],
-            'avarage_consumption' => ['required', 'numeric']
-        ]);
-
-        $vehicle = Vehicle::create($validated);
-
-        return response()->json(
-            $vehicle->load(['brand', 'fuelType', 'picture']),
-            201
-        );
+        //
     }
 
+    /**
+     * Update the specified resource in storage.
+     */
     public function update(Request $request, Vehicle $vehicle)
     {
         $validated = $request->validate([
-            'brand_id' => ['sometimes', 'exists:brands,id'],
-            'year' => ['sometimes', 'integer', 'min:1900', 'max:' . now()->year],
-            'fuel_type_id' => ['sometimes', 'exists:fuel_types,id'],
-            'engine_type' => ['sometimes', 'string'],
-            'tank_capacity' => ['sometimes', 'integer', 'min:0'],
-            'km' => ['sometimes', 'integer', 'min:0'],
-            'license_plate' => ['sometimes', 'string', 'max:20'],
-            'state' => ['sometimes', 'string'],
-            'insurance_expiration' => ['sometimes', 'date'],
-            'avarage_consumption' => ['sometimes', 'numeric'],
+            'engine_type' => ['required'],
+            'tank_capacity' => ['required'],
+            'km' => ['required'],
+            'avarage_consumption' => ['required'],
         ]);
+
 
         $vehicle->update($validated);
 
-        return response()->json(
-            $vehicle->load(['brand', 'fuelType', 'picture'])
-        );
+
+        return redirect()
+            ->route('vehicles.index')
+            ->with('success', 'Vehicle updated successfully.');
     }
 
+    /**
+     * Remove the specified resource from storage.
+     */
     public function destroy(Vehicle $vehicle)
     {
-        $vehicle->delete();
-
-        return response()->json([
-            'message' => 'Vehicle deleted successfully.'
-        ]);
+        //
     }
 }
