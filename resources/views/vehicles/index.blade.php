@@ -208,9 +208,7 @@
 
 
                             <a href="{{ route('vehicles.show', $vehicle) }}" class="btn btn-info btn-sm">
-
                                 <i class="fas fa-eye"></i>
-
                             </a>
 
 
@@ -323,8 +321,6 @@
 
 
                                 </div>
-
-
                                 <div class="modal-footer">
 
                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
