@@ -12,6 +12,19 @@ class Vehicle extends Model
     /** @use HasFactory<\Database\Factories\VehicleFactory> */
     use HasFactory;
 
+    protected $fillable = [
+        'brand_id',
+        'fuel_type_id',
+        'year',
+        'engine_type',
+        'tank_capacity',
+        'km',
+        'license_plate',
+        'state',
+        'insurance_expiration',
+        'avarage_consumption',
+    ];
+
     protected function casts(): array
     {
         return [
@@ -42,6 +55,6 @@ class Vehicle extends Model
 
     public function picture(): HasMany
     {
-        return $this->hasMany(VehiclePhoto::class, 'vehicle_picture_id');
+        return $this->hasMany(VehiclePhoto::class, 'vehicle_id');
     }
 }
