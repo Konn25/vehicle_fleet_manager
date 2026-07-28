@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Brand;
+use App\Models\FuelType;
 use App\Models\Vehicle;
 use Illuminate\Http\Request;
 
@@ -12,12 +14,16 @@ class VehicleController extends Controller
      */
     public function index()
     {
-        $vehicles = Vehicle::with([
-            'brand',
-            'fuelType',
-        ])->get();
+        $vehicles = Vehicle::with(['brand', 'fuelType'])->get();
 
-        return view('vehicles.index', compact('vehicles'));
+        $brands = Brand::orderBy('name')->get();
+        $fuelTypes = FuelType::orderBy('name')->get();
+
+        return view('vehicles.index', compact(
+            'vehicles',
+            'brands',
+            'fuelTypes'
+        ));
     }
 
     /**
@@ -31,9 +37,26 @@ class VehicleController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store()
+    public function store(Request $request)
     {
-        //
+        $request->validate([
+            'brand_id' => 'required|exists:brands,id',
+            'fuel_type_id' => 'required|exists:fuel_types,id',
+            'license_plate' => 'required|max:20|unique:vehicles',
+            'year' => 'required|integer',
+            'engine_type' => 'required',
+            'tank_capacity' => 'required|numeric',
+            'km' => 'required|integer',
+            'state' => 'required',
+            'insurance_expiration' => 'required|date',
+            'avarage_consumption' => 'required|numeric',
+        ]);
+
+        Vehicle::create($request->all());
+
+        return redirect()
+            ->route('vehicles.index')
+            ->with('success', 'Vehicle created successfully.');
     }
 
     /**
@@ -78,6 +101,10 @@ class VehicleController extends Controller
      */
     public function destroy(Vehicle $vehicle)
     {
-        //
+        $vehicle->delete();
+
+        return redirect()
+            ->route('vehicles.index')
+            ->with('success', 'Vehicle deleted successfully.');
     }
 }
