@@ -3,7 +3,7 @@
 @section('title', 'Vehicles')
 
 @section('content')
-
+    @include('vehicles.partials.create-modal')
     <div class="d-flex justify-content-between align-items-center mb-4">
 
         <div>
@@ -67,7 +67,7 @@
         </div>
     @endif
 
-
+    @include('vehicles.partials.create-modal')
     <div class="row">
 
         @if ($vehicles->count() > 0)
@@ -264,8 +264,6 @@
 
                             </button>
 
-
-
                             <form action="{{ route('vehicles.destroy', $vehicle) }}" method="POST" class="d-inline">
 
                                 @csrf
@@ -287,108 +285,7 @@
                     </div>
 
                 </div>
-                <div class="modal fade" id="editVehicle{{ $vehicle->id }}" tabindex="-1">
-
-                    <div class="modal-dialog">
-
-                        <div class="modal-content">
-
-
-                            <div class="modal-header">
-
-                                <h5 class="modal-title">
-                                    Edit {{ $vehicle->license_plate }}
-                                </h5>
-
-                                <button type="button" class="btn-close" data-bs-dismiss="modal">
-                                </button>
-
-                            </div>
-
-
-                            <form action="{{ route('vehicles.update', $vehicle) }}" method="POST">
-
-                                @csrf
-                                @method('PUT')
-
-
-                                <div class="modal-body">
-
-
-                                    <div class="mb-3">
-
-                                        <label class="form-label">
-                                            Engine
-                                        </label>
-
-                                        <input type="text" name="engine_type" class="form-control"
-                                            value="{{ old('engine_type') }}">
-
-                                    </div>
-
-
-
-                                    <div class="mb-3">
-
-                                        <label class="form-label">
-                                            Mileage
-                                        </label>
-
-                                        <input type="number" name="km" class="form-control"
-                                            value="{{ old('km') }}">
-
-                                    </div>
-
-
-
-                                    <div class="mb-3">
-
-                                        <label class="form-label">
-                                            Tank capacity
-                                        </label>
-
-                                        <input type="number" name="tank_capacity" class="form-control"
-                                            value="{{ old('tank_capacity') }}">
-
-                                    </div>
-
-
-
-                                    <div class="mb-3">
-
-                                        <label class="form-label">
-                                            Consumption
-                                        </label>
-
-                                        <input type="number" step="0.1" name="avarage_consumption"
-                                            class="form-control" value="{{ old('avarage_consumption') }}">
-
-                                    </div>
-
-
-                                </div>
-                                <div class="modal-footer">
-
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                        Cancel
-                                    </button>
-
-
-                                    <button type="submit" class="btn btn-primary">
-                                        Save changes
-                                    </button>
-
-                                </div>
-
-
-                            </form>
-
-
-                        </div>
-
-                    </div>
-
-                </div>
+                @include('vehicles.partials.edit-modal')
             @endforeach
         @else
             <div class="col-12">

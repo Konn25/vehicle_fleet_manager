@@ -64,7 +64,20 @@ class VehicleController extends Controller
      */
     public function show(Vehicle $vehicle)
     {
-        return view('vehicles.show', compact('vehicle'));
+
+        $vehicle->load(['brand', 'fuelType']);
+
+        $brands = Brand::orderBy('name')->get();
+        $fuelTypes = FuelType::orderBy('name')->get();
+
+        return view('vehicles.show', compact(
+            'vehicle',
+            'brands',
+            'fuelTypes'
+        ));
+
+
+        // return view('vehicles.show', compact('vehicle'));
     }
 
     /**
