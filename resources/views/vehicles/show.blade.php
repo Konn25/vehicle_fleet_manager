@@ -6,7 +6,7 @@
 
     <div class="container">
 
-        <div class="d-flex justify-content-between mb-4">
+        <div class="d-flex gap-2">
             <h2>
                 <i class="fas fa-car"></i>
                 {{ $vehicle->license_plate }}
@@ -16,8 +16,22 @@
                 <i class="fas fa-arrow-left"></i>
                 Back
             </a>
-        </div>
 
+            <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#editVehicle{{ $vehicle->id }}">
+
+                <i class="fas fa-edit"></i>
+                Edit
+
+            </button>
+
+            <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteVehicle{{ $vehicle->id }}">
+
+                <i class="fas fa-trash"></i>
+                Delete
+
+            </button>
+
+        </div>
         <div class="card shadow">
 
             <div class="card-header bg-primary text-white">
@@ -116,4 +130,6 @@
 
     </div>
 
+
+    @include('vehicles.partials.edit-modal')
 @endsection
