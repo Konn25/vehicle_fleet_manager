@@ -20,8 +20,8 @@ class VehicleFactory extends Factory
     public function definition(): array
     {
         return [
-            'brand_id' => Brand::factory(),
-            'fuel_type_id' => FuelType::factory(),
+            'brand_id' => Brand::inRandomOrder()->value('id'),
+            'fuel_type_id' => FuelType::inRandomOrder()->value('id'),
             'year' => fake()->numberBetween(2000, now()->year),
             'engine_type' => fake()->randomElement(['1.6', '2.0', 'Hybrid']),
             'tank_capacity' => fake()->numberBetween(40, 80),

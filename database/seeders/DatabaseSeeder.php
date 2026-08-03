@@ -24,12 +24,15 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
+        $fuelTypes = FuelType::pluck('id')->toArray();
+
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'testuser@testuser.com',
             'password' => '123456',
             'admin' => 1
         ]);
+
 
 
         $bmw = Brand::factory()->create([
@@ -39,6 +42,9 @@ class DatabaseSeeder extends Seeder
         $bmw->models()->create([
             'name' => '325i',
         ]);
+
+
+        Brand::factory()->count(10)->create();
 
         FuelType::insert([
             ['name' => 'Petrol'],
@@ -64,6 +70,7 @@ class DatabaseSeeder extends Seeder
 
 
         Vehicle::factory()->count(10)->create();
+
 
         Driver::factory()->create([
             'name' => fake()->firstNameMale(),
