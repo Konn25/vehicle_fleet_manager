@@ -30,11 +30,10 @@ class BrandFactory extends Factory
     {
 
         $this->faker->addProvider(new FakeCar($this->faker));
-        $vehicle = $this->faker->vehicleArray();
 
 
         return [
-            'name' => $vehicle['brand']
+            'name' => $this->faker->unique()->vehicleBrand()
         ];
     }
 }
