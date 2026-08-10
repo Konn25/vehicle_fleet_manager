@@ -3,15 +3,15 @@
 namespace Database\Seeders;
 
 use App\Models\Brand;
-use App\Models\BrandModel;
 use App\Models\Driver;
 use App\Models\FuelType;
-use App\Models\TransmissionType;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehiclePhoto;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\VehicleService;
+use App\Models\TransmissionType;
 use Illuminate\Database\Seeder;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
 class DatabaseSeeder extends Seeder
 {
@@ -22,10 +22,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        $fuelTypes = FuelType::pluck('id')->toArray();
-
+        // User
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'testuser@testuser.com',
@@ -34,7 +31,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
 
-
+        // Brands
         $bmw = Brand::factory()->create([
             'name' => 'BMW',
         ]);
@@ -43,9 +40,10 @@ class DatabaseSeeder extends Seeder
             'name' => '325i',
         ]);
 
-
         Brand::factory()->count(10)->create();
 
+
+        // Fuel types
         FuelType::insert([
             ['name' => 'Petrol'],
             ['name' => 'Diesel'],
@@ -54,7 +52,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
 
-
+        // Vehicles
         $vehicle = Vehicle::factory()->create([
             'brand_id' => $bmw->id,
             'fuel_type_id' => FuelType::where('name', 'Petrol')->first()->id,
@@ -68,10 +66,10 @@ class DatabaseSeeder extends Seeder
             'avarage_consumption' => fake()->randomFloat(1, 4, 10)
         ]);
 
-
         Vehicle::factory()->count(10)->create();
 
 
+        // Drivers
         Driver::factory()->create([
             'name' => fake()->firstNameMale(),
             'email' => fake()->email(),
@@ -80,12 +78,30 @@ class DatabaseSeeder extends Seeder
             'actual_vehicle' => $vehicle->id
         ]);
 
+
+        // Vehicle photos
         VehiclePhoto::factory()->create([
             'vehicle_images' => fake()->colorName(),
             'path' => fake()->streetName(),
             'vehicle_id' => $vehicle->id
         ]);
 
-        TransmissionType::insert([['name' => 'Manual'], ['name' => 'Automatic']]);
+
+        // Transmission types
+        TransmissionType::insert([
+            ['name' => 'Manual'],
+            ['name' => 'Automatic']
+        ]);
+
+
+        // Vehicle services
+        Vehicle::all()->each(function (Vehicle $vehicle) {
+
+            VehicleService::factory()
+                ->count(fake()->numberBetween(1, 5))
+                ->create([
+                    'vehicle_id' => $vehicle->id,
+                ]);
+        });
     }
 }
