@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\VehicleService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -56,5 +57,10 @@ class Vehicle extends Model
     public function picture(): HasMany
     {
         return $this->hasMany(VehiclePhoto::class, 'vehicle_id');
+    }
+
+    public function services()
+    {
+        return $this->hasMany(VehicleService::class);
     }
 }
