@@ -16,6 +16,7 @@ class VehicleService extends Model
         'service_date',
         'cost',
         'currency',
+        'exchange_rate',
         'description',
     ];
 
@@ -26,11 +27,23 @@ class VehicleService extends Model
             'vehicle_id' => 'integer',
             'service_date' => 'date',
             'cost' => 'decimal:2',
+            'exchange_rate' => 'decimal:6',
         ];
     }
 
     public function vehicle()
     {
         return $this->belongsTo(Vehicle::class);
+    }
+
+    public function getCostInHufAttribute(): float
+    {
+
+        $rate = $this->exchange_rate ?? 1;
+
+        return round(
+            (float) $this->cost * (float) $rate,
+            2
+        );
     }
 }

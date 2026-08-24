@@ -3,6 +3,7 @@
 @section('title', 'Vehicle Details')
 
 @section('content')
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <div class="container">
 
@@ -189,7 +190,17 @@
                                         {{ $service->description ?? '-' }}
                                     </td>
 
+                                    @include('vehicles.partials.service-edit-modal', [
+                                        'service' => $service,
+                                    ])
+
                                     <td class="text-end">
+                                        <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal"
+                                            data-bs-target="#editService{{ $service->id }}">
+
+                                            <i class="fas fa-edit"></i>
+
+                                        </button>
 
                                         <form action="{{ route('vehicles.services.destroy', $service) }}" method="POST"
                                             class="d-inline">
@@ -346,6 +357,91 @@
         </div>
 
     </div>
+
+    <div class="card mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="card-title">
+                Service Costs
+            </h3>
+
+            <select id="currencySelect" class="form-select form-select-sm" style="width: 100px;">
+                <option value="HUF">HUF</option>
+                <option value="EUR">EUR</option>
+                <option value="USD">USD</option>
+                <option value="GBP">GBP</option>
+            </select>
+        </div>
+
+        <div class="card-body">
+            <canvas id="serviceCostChart"></canvas>
+        </div>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        const chartCanvas = document.getElementById('serviceCostChart');
+        const currencySelect = document.getElementById('currencySelect');
+
+        let serviceCostChart = null;
+
+        async function loadServiceCosts(currency) {
+
+            const url = "{{ route('vehicles.service-costs', $vehicle) }}" +
+                `?currency=${currency}`;
+
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                console.error('Unable to load service costs.');
+                return;
+            }
+
+            const result = await response.json();
+
+            const labels = result.data.map(item => item.date);
+            const costs = result.data.map(item => item.cost);
+
+            if (serviceCostChart) {
+                serviceCostChart.destroy();
+            }
+
+            serviceCostChart = new Chart(chartCanvas, {
+                type: 'line',
+
+                data: {
+                    labels: labels,
+
+                    datasets: [{
+                        label: `Service costs (${result.currency})`,
+                        data: costs,
+
+                        borderWidth: 2,
+                        tension: 0.3,
+
+                        fill: false
+                    }]
+                },
+
+                options: {
+                    responsive: true,
+
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        loadServiceCosts('HUF');
+
+        currencySelect.addEventListener('change', function() {
+            loadServiceCosts(this.value);
+        });
+    </script>
 
     @include('vehicles.partials.edit-modal')
 @endsection

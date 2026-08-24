@@ -97,11 +97,23 @@ class DatabaseSeeder extends Seeder
         // Vehicle services
         Vehicle::all()->each(function (Vehicle $vehicle) {
 
-            VehicleService::factory()
-                ->count(fake()->numberBetween(1, 5))
-                ->create([
-                    'vehicle_id' => $vehicle->id,
-                ]);
+            VehicleService::factory()->create([
+                'vehicle_id' => $vehicle->id,
+                'service_date' => '2026-03-10',
+                'cost' => 100,
+                'currency' => 'EUR',
+                'exchange_rate' => 390.25,
+                'description' => 'Regular maintenance',
+            ]);
+
+            VehicleService::factory()->create([
+                'vehicle_id' => $vehicle->id,
+                'service_date' => '2026-04-15',
+                'cost' => 25000,
+                'currency' => 'HUF',
+                'exchange_rate' => 1,
+                'description' => 'Oil and filter replacement',
+            ]);
         });
     }
 }
