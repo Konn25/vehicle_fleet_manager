@@ -24,6 +24,8 @@ class VehicleServiceFactory extends Factory
 
             'currency' => 'HUF',
 
+            'exchange_rate' => 1.000000,
+
             'description' => fake()->randomElement([
                 'Oil change',
                 'Brake service',

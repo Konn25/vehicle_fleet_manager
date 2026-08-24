@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Brand;
 use App\Models\FuelType;
 use App\Models\Vehicle;
+use App\Services\CurrencyService;
 use Illuminate\Http\Request;
 
 class VehicleController extends Controller
@@ -62,18 +63,32 @@ class VehicleController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Vehicle $vehicle)
+    public function show(Vehicle $vehicle, CurrencyService $currencyService)
     {
 
-        $vehicle->load(['brand', 'fuelType']);
+        $vehicle->load(['brand', 'fuelType', 'services']);
 
         $brands = Brand::orderBy('name')->get();
         $fuelTypes = FuelType::orderBy('name')->get();
 
+        $services = $vehicle->services->sortBy('service_date')->map(function ($service) {
+            return [
+                'date' => $service->service_date->format('Y-m-d'),
+                'cost' => (float) $service->cost,
+                'currency' => $service->currency,
+                'exchange_rate' => (float) $service->exchange_rate,
+                'cost_huf' => $service->cost_in_huf,
+            ];
+        })->values();
+
+
+
+
         return view('vehicles.show', compact(
             'vehicle',
             'brands',
-            'fuelTypes'
+            'fuelTypes',
+            'services'
         ));
 
 
@@ -119,5 +134,55 @@ class VehicleController extends Controller
         return redirect()
             ->route('vehicles.index')
             ->with('success', 'Vehicle deleted successfully.');
+    }
+
+
+    public function serviceCosts(
+        Vehicle $vehicle,
+        Request $request,
+        CurrencyService $currencyService
+    ) {
+        $currency = strtoupper(
+            $request->input('currency', 'HUF')
+        );
+
+        $allowedCurrencies = [
+            'HUF',
+            'EUR',
+            'USD',
+            'GBP',
+        ];
+
+        if (!in_array($currency, $allowedCurrencies)) {
+            return response()->json([
+                'message' => 'Unsupported currency.'
+            ], 422);
+        }
+
+        $services = $vehicle->services()
+            ->orderBy('service_date')
+            ->get();
+
+        $data = $services->map(function ($service) use (
+            $currency,
+            $currencyService
+        ) {
+            $cost = $currencyService->convert(
+                (float) $service->cost,
+                $service->currency,
+                $currency,
+                $service->service_date
+            );
+
+            return [
+                'date' => $service->service_date->format('Y-m-d'),
+                'cost' => $cost,
+            ];
+        });
+
+        return response()->json([
+            'currency' => $currency,
+            'data' => $data,
+        ]);
     }
 }

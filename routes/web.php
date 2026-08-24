@@ -32,3 +32,14 @@ Route::delete(
     'vehicle-services/{vehicleService}',
     [VehicleServiceController::class, 'destroy']
 )->name('vehicles.services.destroy');
+
+
+Route::put(
+    'vehicle-services/{vehicleService}',
+    [VehicleServiceController::class, 'update']
+)->name('vehicles.services.update');
+
+Route::get(
+    '/vehicles/{vehicle}/service-costs',
+    [VehicleController::class, 'serviceCosts']
+)->name('vehicles.service-costs');
