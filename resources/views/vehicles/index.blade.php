@@ -193,16 +193,19 @@
 
 
                             <div class="mb-2">
-
                                 <i class="fas fa-gas-pump text-primary"></i>
-
                                 Consumption:
 
                                 <strong>
-                                    {{ $vehicle->avarage_consumption }}
-                                    L/100km
+                                    @if ($consumptions[$vehicle->id] !== null)
+                                        {{ number_format($consumptions[$vehicle->id], 2, '.', ' ') }}
+                                        L/100 km
+                                    @else
+                                        <span class="text-muted">
+                                            No data
+                                        </span>
+                                    @endif
                                 </strong>
-
                             </div>
 
                             @php
@@ -417,16 +420,6 @@
 
                                 </div>
 
-                                <div class="mb-3">
-
-                                        <label class="form-label">
-                                            Average Consumption
-                                        </label>
-
-                                        <input type="number" step="0.1" name="avarage_consumption"
-                                            class="form-control" value="{{ old('avarage_consumption') }}">
-
-                                    </div>
 
                                     <div class="mb-3">
 
