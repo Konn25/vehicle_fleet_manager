@@ -7,6 +7,8 @@ use App\Models\FuelType;
 use App\Models\Vehicle;
 use App\Services\CurrencyService;
 use Illuminate\Http\Request;
+use App\Services\CostService;
+
 
 class VehicleController extends Controller
 {
@@ -63,7 +65,7 @@ class VehicleController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Vehicle $vehicle, CurrencyService $currencyService)
+    public function show(Vehicle $vehicle)
     {
 
         $vehicle->load(['brand', 'fuelType', 'services']);
@@ -137,10 +139,41 @@ class VehicleController extends Controller
     }
 
 
-    public function serviceCosts(
+    public function serviceCosts(Vehicle $vehicle, Request $request, CostService $costService)
+    {
+        $currency = strtoupper(
+            $request->input('currency', 'HUF')
+        );
+
+        $allowedCurrencies = [
+            'HUF',
+            'EUR',
+            'USD',
+            'GBP',
+        ];
+
+        if (!in_array($currency, $allowedCurrencies)) {
+            return response()->json([
+                'message' => 'Unsupported currency.'
+            ], 422);
+        }
+
+        $data = $costService->getServiceCosts(
+            $vehicle,
+            $currency
+        );
+
+        return response()->json([
+            'currency' => $currency,
+            'data' => $data,
+        ]);
+    }
+
+
+    public function serviceCostSummary(
         Vehicle $vehicle,
         Request $request,
-        CurrencyService $currencyService
+        CostService $costService
     ) {
         $currency = strtoupper(
             $request->input('currency', 'HUF')
@@ -159,30 +192,30 @@ class VehicleController extends Controller
             ], 422);
         }
 
-        $services = $vehicle->services()
-            ->orderBy('service_date')
-            ->get();
-
-        $data = $services->map(function ($service) use (
-            $currency,
-            $currencyService
-        ) {
-            $cost = $currencyService->convert(
-                (float) $service->cost,
-                $service->currency,
-                $currency,
-                $service->service_date
-            );
-
-            return [
-                'date' => $service->service_date->format('Y-m-d'),
-                'cost' => $cost,
-            ];
-        });
+        $year = (int) $request->input(
+            'year',
+            now()->year
+        );
 
         return response()->json([
             'currency' => $currency,
-            'data' => $data,
+            'year' => $year,
+
+            'monthly' => $costService->getMonthlyCosts(
+                $vehicle,
+                $currency,
+                $year
+            ),
+
+            'yearly' => $costService->getYearlyCosts(
+                $vehicle,
+                $currency
+            ),
+
+            'total' => $costService->getTotalCost(
+                $vehicle,
+                $currency
+            ),
         ]);
     }
 }

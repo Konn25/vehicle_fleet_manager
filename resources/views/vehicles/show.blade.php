@@ -360,9 +360,17 @@
 
     <div class="card mt-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h3 class="card-title">
-                Service Costs
-            </h3>
+            <div>
+                <h3 class="card-title mb-1">
+                    Service Costs
+                </h3>
+
+                <div class="text-muted small">
+                    Total:
+                    <strong id="totalServiceCost">0</strong>
+                </div>
+            </div>
+
 
             <select id="currencySelect" class="form-select form-select-sm" style="width: 100px;">
                 <option value="HUF">HUF</option>
@@ -377,8 +385,86 @@
         </div>
     </div>
 
+    <div class="card mt-4 shadow">
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+
+            <div>
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar"></i>
+                    Cost Summary
+                </h5>
+
+                <small id="summaryPeriodLabel">
+                    Monthly costs
+                </small>
+            </div>
+
+            <div class="d-flex gap-2">
+
+                <select id="summaryPeriod" class="form-select form-select-sm">
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                </select>
+
+                <select id="summaryYear" class="form-select form-select-sm">
+                    @for ($year = now()->year; $year >= now()->year - 5; $year--)
+                        <option value="{{ $year }}">
+                            {{ $year }}
+                        </option>
+                    @endfor
+                </select>
+
+            </div>
+
+        </div>
+
+        <div class="card-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle mb-0">
+
+                    <thead>
+                        <tr>
+                            <th>Period</th>
+                            <th class="text-end">Cost</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="costSummaryBody">
+
+                        <tr>
+                            <td colspan="2" class="text-center text-muted">
+                                Loading...
+                            </td>
+                        </tr>
+
+                    </tbody>
+
+                    <tfoot>
+
+                        <tr class="fw-bold">
+
+                            <td>
+                                Total
+                            </td>
+
+                            <td id="summaryTotal" class="text-end">
+                                0
+                            </td>
+
+                        </tr>
+
+                    </tfoot>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
 
     <script>
         const chartCanvas = document.getElementById('serviceCostChart');
@@ -386,61 +472,273 @@
 
         let serviceCostChart = null;
 
+        const currencyConfig = {
+            HUF: {
+                locale: 'hu-HU',
+                currency: 'HUF'
+            },
+            EUR: {
+                locale: 'de-DE',
+                currency: 'EUR'
+            },
+            USD: {
+                locale: 'en-US',
+                currency: 'USD'
+            },
+            GBP: {
+                locale: 'en-GB',
+                currency: 'GBP'
+            }
+        };
+
+        function formatCurrency(value, currency) {
+            const config = currencyConfig[currency];
+
+            return new Intl.NumberFormat(config.locale, {
+                style: 'currency',
+                currency: config.currency,
+                maximumFractionDigits: 2
+            }).format(value);
+        }
+
         async function loadServiceCosts(currency) {
+            try {
+                const url = "{{ route('vehicles.service-costs', $vehicle) }}" +
+                    `?currency=${encodeURIComponent(currency)}`;
 
-            const url = "{{ route('vehicles.service-costs', $vehicle) }}" +
-                `?currency=${currency}`;
+                const response = await fetch(url);
 
-            const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error('Unable to load service costs.');
+                }
 
-            if (!response.ok) {
-                console.error('Unable to load service costs.');
-                return;
-            }
+                const result = await response.json();
 
-            const result = await response.json();
+                const labels = result.data.map(item => item.date);
+                const costs = result.data.map(item => item.cost);
+                const totalCost = costs.reduce((sum, cost) => sum + Number(cost), 0);
 
-            const labels = result.data.map(item => item.date);
-            const costs = result.data.map(item => item.cost);
+                document.getElementById('totalServiceCost').textContent = formatCurrency(totalCost, result.currency);
 
-            if (serviceCostChart) {
-                serviceCostChart.destroy();
-            }
 
-            serviceCostChart = new Chart(chartCanvas, {
-                type: 'line',
+                if (serviceCostChart) {
+                    serviceCostChart.destroy();
+                }
 
-                data: {
-                    labels: labels,
+                serviceCostChart = new Chart(chartCanvas, {
+                    type: 'line',
 
-                    datasets: [{
-                        label: `Service costs (${result.currency})`,
-                        data: costs,
+                    data: {
+                        labels: labels,
 
-                        borderWidth: 2,
-                        tension: 0.3,
+                        datasets: [{
+                            label: `Service costs (${result.currency})`,
+                            data: costs,
 
-                        fill: false
-                    }]
-                },
+                            borderWidth: 2,
+                            tension: 0.3,
 
-                options: {
-                    responsive: true,
+                            fill: false,
 
-                    scales: {
-                        y: {
-                            beginAtZero: true
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        }]
+                    },
+
+                    options: {
+                        responsive: true,
+
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        },
+
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return formatCurrency(
+                                            context.parsed.y,
+                                            result.currency
+                                        );
+                                    }
+                                }
+                            }
+                        },
+
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+
+                                ticks: {
+                                    callback: function(value) {
+                                        return formatCurrency(
+                                            value,
+                                            result.currency
+                                        );
+                                    }
+                                }
+                            },
+
+                            x: {
+                                ticks: {
+                                    callback: function(value) {
+                                        const date = this.getLabelForValue(value);
+
+                                        return new Date(date)
+                                            .toLocaleDateString('hu-HU');
+                                    }
+                                }
+                            }
                         }
                     }
-                }
-            });
+                });
+
+            } catch (error) {
+                console.error(error);
+            }
         }
+
 
         loadServiceCosts('HUF');
 
         currencySelect.addEventListener('change', function() {
             loadServiceCosts(this.value);
         });
+
+
+        const summaryPeriod = document.getElementById('summaryPeriod');
+        const summaryYear = document.getElementById('summaryYear');
+        const summaryBody = document.getElementById('costSummaryBody');
+        const summaryTotal = document.getElementById('summaryTotal');
+        const summaryPeriodLabel = document.getElementById('summaryPeriodLabel');
+
+        async function loadCostSummary() {
+
+            const currency = currencySelect.value;
+            const period = summaryPeriod.value;
+            const year = summaryYear.value;
+
+            try {
+
+                const url =
+                    "{{ route('vehicles.service-cost-summary', $vehicle) }}" +
+                    `?currency=${encodeURIComponent(currency)}` +
+                    `&year=${encodeURIComponent(year)}`;
+
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error('Unable to load cost summary.');
+                }
+
+                const result = await response.json();
+
+                summaryBody.innerHTML = '';
+
+                if (period === 'monthly') {
+
+                    summaryPeriodLabel.textContent =
+                        `Monthly costs - ${result.year}`;
+
+                    const monthly = result.monthly;
+
+                    Object.entries(monthly).forEach(([month, cost]) => {
+
+                        const row = document.createElement('tr');
+
+                        const date = new Date(`${month}-01`);
+
+                        const monthName = date.toLocaleDateString(
+                            'en-US', {
+                                month: 'long'
+                            }
+                        );
+
+                        row.innerHTML = `
+                    <td>
+                        ${monthName}
+                    </td>
+
+                    <td class="text-end fw-semibold">
+                        ${formatCurrency(cost, result.currency)}
+                    </td>
+                `;
+
+                        summaryBody.appendChild(row);
+
+                    });
+
+                } else {
+
+                    summaryPeriodLabel.textContent =
+                        'Yearly costs';
+
+                    const yearly = result.yearly;
+
+                    Object.entries(yearly).forEach(([year, cost]) => {
+
+                        const row = document.createElement('tr');
+
+                        row.innerHTML = `
+                    <td>
+                        ${year}
+                    </td>
+
+                    <td class="text-end fw-semibold">
+                        ${formatCurrency(cost, result.currency)}
+                    </td>
+                `;
+
+                        summaryBody.appendChild(row);
+
+                    });
+                }
+
+                summaryTotal.textContent =
+                    formatCurrency(result.total, result.currency);
+
+                if (summaryBody.children.length === 0) {
+
+                    summaryBody.innerHTML = `
+                <tr>
+                    <td colspan="2" class="text-center text-muted py-3">
+                        No service costs found.
+                    </td>
+                </tr>
+            `;
+                }
+
+            } catch (error) {
+
+                console.error(error);
+
+                summaryBody.innerHTML = `
+            <tr>
+                <td colspan="2" class="text-center text-danger">
+                    Unable to load cost summary.
+                </td>
+            </tr>
+        `;
+            }
+        }
+
+        summaryPeriod.addEventListener(
+            'change',
+            loadCostSummary
+        );
+
+        summaryYear.addEventListener(
+            'change',
+            loadCostSummary
+        );
+
+        currencySelect.addEventListener(
+            'change',
+            loadCostSummary
+        );
+
+        loadCostSummary();
     </script>
 
     @include('vehicles.partials.edit-modal')
