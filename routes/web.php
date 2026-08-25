@@ -43,3 +43,8 @@ Route::get(
     '/vehicles/{vehicle}/service-costs',
     [VehicleController::class, 'serviceCosts']
 )->name('vehicles.service-costs');
+
+Route::get(
+    '/vehicles/{vehicle}/service-cost-summary',
+    [VehicleController::class, 'serviceCostSummary']
+)->name('vehicles.service-cost-summary');
