@@ -31,7 +31,6 @@ return new class extends Migration
             $table->string('license_plate')->unique();
             $table->string('state');
             $table->date('insurance_expiration');
-            $table->double('avarage_consumption');
 
             $table->timestamps();
         });

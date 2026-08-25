@@ -29,7 +29,6 @@ class VehicleFactory extends Factory
             'license_plate' => strtoupper(fake()->bothify('???-###')),
             'state' => fake()->randomElement(['active', 'inactive']),
             'insurance_expiration' => fake()->dateTimeBetween('-2 years', '+2 years'),
-            'avarage_consumption' => fake()->randomFloat(1, 4, 10),
         ];
     }
 }

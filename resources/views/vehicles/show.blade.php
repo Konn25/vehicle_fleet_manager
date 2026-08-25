@@ -92,7 +92,16 @@
 
                             <tr>
                                 <th>Consumption</th>
-                                <td>{{ $vehicle->avarage_consumption }} L/100km</td>
+                                <td>
+                                    @if ($averageConsumption !== null)
+                                        <strong>{{ number_format($averageConsumption, 2) }}</strong>
+                                        L/100 km
+                                    @else
+                                        <span class="text-muted">
+                                            No data
+                                        </span>
+                                    @endif
+                                </td>
                             </tr>
 
                             <tr>
@@ -244,6 +253,130 @@
 
     </div>
 
+    <div class="card shadow mt-4">
+
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+
+            <h5 class="mb-0">
+                <i class="fas fa-gas-pump"></i>
+                Fueling History
+            </h5>
+
+            <span class="badge bg-light text-dark">
+                {{ $vehicle->fuelings->count() }} fuelings
+            </span>
+
+        </div>
+
+        <div class="card-body">
+
+            @if ($vehicle->fuelings->count())
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle">
+
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Odometer</th>
+                                <th>Distance</th>
+                                <th>Liters</th>
+                                <th>Price / Liter</th>
+                                <th>Total Cost</th>
+                                <th>Consumption</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            @php
+                                $fuelings = $vehicle->fuelings->sortBy('odometer')->values();
+                            @endphp
+
+                            @foreach ($fuelings as $index => $fueling)
+                                @php
+                                    $previousFueling = $index > 0 ? $fuelings[$index - 1] : null;
+
+                                    $distance = $previousFueling
+                                        ? $fueling->odometer - $previousFueling->odometer
+                                        : null;
+
+                                    $consumption =
+                                        $distance && $distance > 0 ? ($fueling->liters / $distance) * 100 : null;
+                                @endphp
+
+                                <tr>
+
+                                    <td>
+                                        {{ $fueling->fueling_date->format('Y-m-d') }}
+                                    </td>
+
+                                    <td>
+                                        {{ number_format($fueling->odometer, 0, ',', ' ') }}
+                                        km
+                                    </td>
+
+                                    <td>
+                                        @if ($distance)
+                                            {{ number_format($distance, 0, ',', ' ') }} km
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
+
+                                    <td>
+                                        {{ number_format($fueling->liters, 2, '.', ' ') }} L
+                                    </td>
+
+                                    <td>
+                                        {{ number_format($fueling->price_per_liter, 2, '.', ' ') }}
+                                        {{ $fueling->currency }}/L
+                                    </td>
+
+                                    <td>
+                                        <strong>
+                                            {{ number_format($fueling->total_cost, 2, '.', ' ') }}
+                                            {{ $fueling->currency }}
+                                        </strong>
+                                    </td>
+
+                                    <td>
+                                        @if ($consumption)
+                                            <span class="badge bg-info text-dark">
+                                                {{ number_format($consumption, 2) }}
+                                                L/100 km
+                                            </span>
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
+
+                                </tr>
+                            @endforeach
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+            @else
+                <div class="text-center text-muted py-4">
+
+                    <i class="fas fa-gas-pump fa-2x mb-2"></i>
+
+                    <p class="mb-0">
+                        No fueling records found.
+                    </p>
+
+                </div>
+
+            @endif
+
+        </div>
+
+    </div>
+
     <div class="modal fade" id="addServiceModal" tabindex="-1" aria-hidden="true">
 
         <div class="modal-dialog">
@@ -359,30 +492,51 @@
     </div>
 
     <div class="card mt-4">
+
         <div class="card-header d-flex justify-content-between align-items-center">
+
             <div>
                 <h3 class="card-title mb-1">
-                    Service Costs
+                    Vehicle Costs
                 </h3>
 
                 <div class="text-muted small">
                     Total:
-                    <strong id="totalServiceCost">0</strong>
+                    <strong id="totalVehicleCost">0</strong>
                 </div>
             </div>
 
+            <div class="d-flex gap-2">
 
-            <select id="currencySelect" class="form-select form-select-sm" style="width: 100px;">
-                <option value="HUF">HUF</option>
-                <option value="EUR">EUR</option>
-                <option value="USD">USD</option>
-                <option value="GBP">GBP</option>
-            </select>
+                <select id="costYearSelect" class="form-select form-select-sm" style="width: 100px;">
+
+                    @for ($year = now()->year; $year >= now()->year - 5; $year--)
+                        <option value="{{ $year }}">
+                            {{ $year }}
+                        </option>
+                    @endfor
+
+                </select>
+
+                <select id="currencySelect" class="form-select form-select-sm" style="width: 100px;">
+
+                    <option value="HUF">HUF</option>
+                    <option value="EUR">EUR</option>
+                    <option value="USD">USD</option>
+                    <option value="GBP">GBP</option>
+
+                </select>
+
+            </div>
+
         </div>
 
         <div class="card-body">
+
             <canvas id="serviceCostChart"></canvas>
+
         </div>
+
     </div>
 
     <div class="card mt-4 shadow">
@@ -401,12 +555,10 @@
             </div>
 
             <div class="d-flex gap-2">
-
                 <select id="summaryPeriod" class="form-select form-select-sm">
                     <option value="monthly">Monthly</option>
                     <option value="yearly">Yearly</option>
                 </select>
-
                 <select id="summaryYear" class="form-select form-select-sm">
                     @for ($year = now()->year; $year >= now()->year - 5; $year--)
                         <option value="{{ $year }}">
@@ -414,9 +566,7 @@
                         </option>
                     @endfor
                 </select>
-
             </div>
-
         </div>
 
         <div class="card-body">
@@ -453,101 +603,181 @@
                             <td id="summaryTotal" class="text-end">
                                 0
                             </td>
-
                         </tr>
-
                     </tfoot>
-
                 </table>
-
             </div>
-
         </div>
-
     </div>
 
     <script>
         const chartCanvas = document.getElementById('serviceCostChart');
+
         const currencySelect = document.getElementById('currencySelect');
+        const yearSelect = document.getElementById('costYearSelect');
+
+        const summaryPeriod = document.getElementById('summaryPeriod');
+        const summaryYear = document.getElementById('summaryYear');
+
+        const summaryBody = document.getElementById('costSummaryBody');
+        const summaryTotal = document.getElementById('summaryTotal');
+        const summaryPeriodLabel = document.getElementById('summaryPeriodLabel');
 
         let serviceCostChart = null;
 
         const currencyConfig = {
+
             HUF: {
                 locale: 'hu-HU',
                 currency: 'HUF'
             },
+
             EUR: {
                 locale: 'de-DE',
                 currency: 'EUR'
             },
+
             USD: {
                 locale: 'en-US',
                 currency: 'USD'
             },
+
             GBP: {
                 locale: 'en-GB',
                 currency: 'GBP'
+            },
+
+            CHF: {
+                locale: 'de-CH',
+                currency: 'CHF'
             }
+
         };
 
         function formatCurrency(value, currency) {
-            const config = currencyConfig[currency];
+
+            const config = currencyConfig[currency] ?? currencyConfig.HUF;
 
             return new Intl.NumberFormat(config.locale, {
                 style: 'currency',
                 currency: config.currency,
                 maximumFractionDigits: 2
-            }).format(value);
+            }).format(Number(value) || 0);
+
         }
 
-        async function loadServiceCosts(currency) {
+        async function loadServiceCosts(currency, year) {
+
             try {
-                const url = "{{ route('vehicles.service-costs', $vehicle) }}" +
-                    `?currency=${encodeURIComponent(currency)}`;
+
+                const url =
+                    "{{ route('vehicles.service-costs', $vehicle) }}" +
+                    `?currency=${encodeURIComponent(currency)}` +
+                    `&year=${encodeURIComponent(year)}`;
 
                 const response = await fetch(url);
 
                 if (!response.ok) {
-                    throw new Error('Unable to load service costs.');
+                    throw new Error(
+                        `HTTP ${response.status}`
+                    );
                 }
 
                 const result = await response.json();
 
-                const labels = result.data.map(item => item.date);
-                const costs = result.data.map(item => item.cost);
-                const totalCost = costs.reduce((sum, cost) => sum + Number(cost), 0);
+                const labels = [
+                    'Jan',
+                    'Feb',
+                    'Mar',
+                    'Apr',
+                    'May',
+                    'Jun',
+                    'Jul',
+                    'Aug',
+                    'Sep',
+                    'Oct',
+                    'Nov',
+                    'Dec'
+                ];
 
-                document.getElementById('totalServiceCost').textContent = formatCurrency(totalCost, result.currency);
 
+                const monthly = result.monthly ?? [];
+
+
+                const serviceCosts = monthly.map(item =>
+                    Number(item.service ?? 0)
+                );
+
+
+                const fuelingCosts = monthly.map(item =>
+                    Number(item.fueling ?? 0)
+                );
+
+
+                const totalCosts = monthly.map(item =>
+                    Number(item.total ?? 0)
+                );
+
+
+                const totalVehicleCost = totalCosts.reduce(
+                    (sum, cost) => sum + cost,
+                    0
+                );
+
+
+                document.getElementById(
+                    'totalVehicleCost'
+                ).textContent = formatCurrency(
+                    totalVehicleCost,
+                    result.currency
+                );
 
                 if (serviceCostChart) {
+
                     serviceCostChart.destroy();
+
                 }
 
                 serviceCostChart = new Chart(chartCanvas, {
-                    type: 'line',
 
+                    type: 'line',
                     data: {
                         labels: labels,
-
                         datasets: [{
-                            label: `Service costs (${result.currency})`,
-                            data: costs,
+                                label: `Service (${result.currency})`,
+                                data: serviceCosts,
+                                borderWidth: 2,
+                                tension: 0.3,
+                                fill: false,
+                                pointRadius: 4,
+                                pointHoverRadius: 6
+                            },
 
-                            borderWidth: 2,
-                            tension: 0.3,
+                            {
+                                label: `Fueling (${result.currency})`,
+                                data: fuelingCosts,
+                                borderWidth: 2,
+                                tension: 0.3,
+                                fill: false,
+                                pointRadius: 4,
+                                pointHoverRadius: 6
+                            },
 
-                            fill: false,
-
-                            pointRadius: 4,
-                            pointHoverRadius: 6
-                        }]
+                            {
+                                label: `Total (${result.currency})`,
+                                data: totalCosts,
+                                borderWidth: 3,
+                                tension: 0.3,
+                                fill: false,
+                                pointRadius: 5,
+                                pointHoverRadius: 7
+                            }
+                        ]
                     },
+
 
                     options: {
                         responsive: true,
-
                         interaction: {
                             intersect: false,
                             mode: 'index'
@@ -557,19 +787,22 @@
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
-                                        return formatCurrency(
-                                            context.parsed.y,
-                                            result.currency
+                                        return (
+                                            `${context.dataset.label}: ` +
+                                            formatCurrency(
+                                                context.parsed.y,
+                                                result.currency
+                                            )
                                         );
                                     }
                                 }
                             }
                         },
 
+
                         scales: {
                             y: {
                                 beginAtZero: true,
-
                                 ticks: {
                                     callback: function(value) {
                                         return formatCurrency(
@@ -578,49 +811,28 @@
                                         );
                                     }
                                 }
-                            },
-
-                            x: {
-                                ticks: {
-                                    callback: function(value) {
-                                        const date = this.getLabelForValue(value);
-
-                                        return new Date(date)
-                                            .toLocaleDateString('hu-HU');
-                                    }
-                                }
                             }
                         }
                     }
                 });
-
             } catch (error) {
-                console.error(error);
+                console.error(
+                    'Unable to load vehicle costs:',
+                    error
+                );
             }
         }
 
-
-        loadServiceCosts('HUF');
-
-        currencySelect.addEventListener('change', function() {
-            loadServiceCosts(this.value);
-        });
-
-
-        const summaryPeriod = document.getElementById('summaryPeriod');
-        const summaryYear = document.getElementById('summaryYear');
-        const summaryBody = document.getElementById('costSummaryBody');
-        const summaryTotal = document.getElementById('summaryTotal');
-        const summaryPeriodLabel = document.getElementById('summaryPeriodLabel');
-
-        async function loadCostSummary() {
-
-            const currency = currencySelect.value;
-            const period = summaryPeriod.value;
-            const year = summaryYear.value;
+        async function loadCostSummary(currency, year) {
+            summaryBody.innerHTML = `
+            <tr>
+                <td colspan="2" class="text-center text-muted">
+                    Loading...
+                </td>
+            </tr>
+        `;
 
             try {
-
                 const url =
                     "{{ route('vehicles.service-cost-summary', $vehicle) }}" +
                     `?currency=${encodeURIComponent(currency)}` +
@@ -629,116 +841,196 @@
                 const response = await fetch(url);
 
                 if (!response.ok) {
-                    throw new Error('Unable to load cost summary.');
+
+                    const errorText = await response.text();
+                    console.error(
+                        'Cost summary error:',
+                        response.status,
+                        errorText
+                    );
+
+                    throw new Error(
+                        `HTTP ${response.status}`
+                    );
                 }
 
                 const result = await response.json();
+                console.log('Cost summary:', result);
 
-                summaryBody.innerHTML = '';
+                const selectedPeriod = summaryPeriod.value;
 
-                if (period === 'monthly') {
-
+                if (selectedPeriod === 'monthly') {
                     summaryPeriodLabel.textContent =
                         `Monthly costs - ${result.year}`;
 
-                    const monthly = result.monthly;
+                    summaryBody.innerHTML = '';
 
-                    Object.entries(monthly).forEach(([month, cost]) => {
+                    let total = 0;
+
+                    const months = [
+                        'January',
+                        'February',
+                        'March',
+                        'April',
+                        'May',
+                        'June',
+                        'July',
+                        'August',
+                        'September',
+                        'October',
+                        'November',
+                        'December'
+                    ];
+
+                    const monthly = result.monthly ?? [];
+
+                    monthly.forEach((item, index) => {
+                        const cost = Number(item.total ?? 0);
+
+                        total += cost;
 
                         const row = document.createElement('tr');
 
-                        const date = new Date(`${month}-01`);
-
-                        const monthName = date.toLocaleDateString(
-                            'en-US', {
-                                month: 'long'
-                            }
-                        );
-
                         row.innerHTML = `
-                    <td>
-                        ${monthName}
-                    </td>
+                        <td>
+                            ${months[index]}
+                        </td>
 
-                    <td class="text-end fw-semibold">
-                        ${formatCurrency(cost, result.currency)}
-                    </td>
-                `;
+                        <td class="text-end">
+                            <strong>
+                                ${formatCurrency(
+                                    cost,
+                                    result.currency
+                                )}
+                            </strong>
+                        </td>
+                    `;
 
                         summaryBody.appendChild(row);
 
                     });
+
+                    summaryTotal.textContent =
+                        formatCurrency(
+                            total,
+                            result.currency
+                        );
 
                 } else {
 
-                    summaryPeriodLabel.textContent =
-                        'Yearly costs';
+                    summaryPeriodLabel.textContent = 'Yearly costs';
+                    summaryBody.innerHTML = '';
 
-                    const yearly = result.yearly;
+                    let total = 0;
+                    const yearly = result.yearly ?? [];
 
-                    Object.entries(yearly).forEach(([year, cost]) => {
+                    yearly.forEach(item => {
+
+                        const cost = Number(item.total ?? 0);
+
+                        total += cost;
 
                         const row = document.createElement('tr');
 
                         row.innerHTML = `
-                    <td>
-                        ${year}
-                    </td>
+                        <td>
+                            ${item.year}
+                        </td>
 
-                    <td class="text-end fw-semibold">
-                        ${formatCurrency(cost, result.currency)}
-                    </td>
-                `;
+                        <td class="text-end">
+                            <strong>
+                                ${formatCurrency(
+                                    cost,
+                                    result.currency
+                                )}
+                            </strong>
+                        </td>
+                    `;
 
                         summaryBody.appendChild(row);
-
                     });
-                }
 
-                summaryTotal.textContent =
-                    formatCurrency(result.total, result.currency);
+                    summaryTotal.textContent =
+                        formatCurrency(
+                            total,
+                            result.currency
+                        );
 
-                if (summaryBody.children.length === 0) {
-
-                    summaryBody.innerHTML = `
-                <tr>
-                    <td colspan="2" class="text-center text-muted py-3">
-                        No service costs found.
-                    </td>
-                </tr>
-            `;
                 }
 
             } catch (error) {
 
-                console.error(error);
+                console.error(
+                    'Unable to load cost summary:',
+                    error
+                );
 
                 summaryBody.innerHTML = `
-            <tr>
-                <td colspan="2" class="text-center text-danger">
-                    Unable to load cost summary.
-                </td>
-            </tr>
-        `;
+                <tr>
+                    <td colspan="2">
+
+                        <div class="alert alert-danger mb-0">
+                            Unable to load cost summary.
+                        </div>
+
+                    </td>
+                </tr>
+            `;
+
+                summaryTotal.textContent = '-';
             }
         }
 
-        summaryPeriod.addEventListener(
-            'change',
-            loadCostSummary
+        loadServiceCosts(
+            currencySelect.value,
+            yearSelect.value
         );
 
-        summaryYear.addEventListener(
-            'change',
-            loadCostSummary
+        loadCostSummary(
+            currencySelect.value,
+            summaryYear.value
         );
 
-        currencySelect.addEventListener(
-            'change',
-            loadCostSummary
-        );
+        currencySelect.addEventListener('change', function() {
 
-        loadCostSummary();
+            const currency = this.value;
+
+            loadServiceCosts(
+                currency,
+                yearSelect.value
+            );
+
+
+            loadCostSummary(
+                currency,
+                summaryYear.value
+            );
+
+        });
+
+        yearSelect.addEventListener('change', function() {
+            loadServiceCosts(
+                currencySelect.value,
+                this.value
+            );
+
+        });
+
+        summaryPeriod.addEventListener('change', function() {
+            loadCostSummary(
+                currencySelect.value,
+                summaryYear.value
+            );
+
+        });
+
+        summaryYear.addEventListener('change', function() {
+
+            loadCostSummary(
+                currencySelect.value,
+                this.value
+            );
+        });
     </script>
 
     @include('vehicles.partials.edit-modal')

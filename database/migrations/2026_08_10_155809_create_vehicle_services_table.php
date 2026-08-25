@@ -14,9 +14,7 @@ return new class extends Migration
         Schema::create('vehicle_services', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('vehicle_id')
-                ->constrained('vehicles')
-                ->cascadeOnDelete();
+            $table->foreignId('vehicle_id')->constrained('vehicles')->cascadeOnDelete();
 
             $table->date('service_date');
 

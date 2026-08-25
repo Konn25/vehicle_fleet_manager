@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Brand;
 use App\Models\FuelType;
 use App\Models\Vehicle;
-use App\Services\CurrencyService;
 use Illuminate\Http\Request;
 use App\Services\CostService;
+use App\Services\FuelConsumptionService;
 
 
 class VehicleController extends Controller
@@ -15,17 +15,24 @@ class VehicleController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(FuelConsumptionService $fuelConsumptionService)
     {
-        $vehicles = Vehicle::with(['brand', 'fuelType'])->get();
+        $vehicles = Vehicle::with(['brand', 'fuelType', 'fuelings'])->get();
 
         $brands = Brand::orderBy('name')->get();
         $fuelTypes = FuelType::orderBy('name')->get();
 
+        $consumptions = [];
+
+        foreach ($vehicles as $vehicle) {
+            $consumptions[$vehicle->id] = $fuelConsumptionService->getAverageConsumption($vehicle);
+        }
+
         return view('vehicles.index', compact(
             'vehicles',
             'brands',
-            'fuelTypes'
+            'fuelTypes',
+            'consumptions'
         ));
     }
 
@@ -52,7 +59,6 @@ class VehicleController extends Controller
             'km' => 'required|integer',
             'state' => 'required',
             'insurance_expiration' => 'required|date',
-            'avarage_consumption' => 'required|numeric',
         ]);
 
         Vehicle::create($request->all());
@@ -65,10 +71,10 @@ class VehicleController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Vehicle $vehicle)
+    public function show(Vehicle $vehicle,  FuelConsumptionService $fuelConsumptionService)
     {
 
-        $vehicle->load(['brand', 'fuelType', 'services']);
+        $vehicle->load(['brand', 'fuelType', 'services', 'fuelings']);
 
         $brands = Brand::orderBy('name')->get();
         $fuelTypes = FuelType::orderBy('name')->get();
@@ -84,17 +90,15 @@ class VehicleController extends Controller
         })->values();
 
 
-
+        $averageConsumption = $fuelConsumptionService->getAverageConsumption($vehicle);
 
         return view('vehicles.show', compact(
             'vehicle',
             'brands',
             'fuelTypes',
-            'services'
+            'services',
+            'averageConsumption'
         ));
-
-
-        // return view('vehicles.show', compact('vehicle'));
     }
 
     /**
@@ -158,14 +162,30 @@ class VehicleController extends Controller
             ], 422);
         }
 
-        $data = $costService->getServiceCosts(
+        $services = $costService->getServiceCosts(
             $vehicle,
             $currency
         );
 
+        $fuelings = $costService->getFuelingCosts(
+            $vehicle,
+            $currency
+        );
+
+        $year = (int) $request->input(
+            'year',
+            now()->year
+        );
+
         return response()->json([
             'currency' => $currency,
-            'data' => $data,
+            'services' => $services,
+            'fuelings' => $fuelings,
+            'monthly' => $costService->getMonthlyCosts(
+                $vehicle,
+                $currency,
+                $year
+            ),
         ]);
     }
 

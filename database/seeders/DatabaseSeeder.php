@@ -10,8 +10,10 @@ use App\Models\Vehicle;
 use App\Models\VehiclePhoto;
 use App\Models\VehicleService;
 use App\Models\TransmissionType;
+use App\Models\Fueling;
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+
 
 class DatabaseSeeder extends Seeder
 {
@@ -63,7 +65,6 @@ class DatabaseSeeder extends Seeder
             'license_plate' => strtoupper(fake()->bothify('???-###')),
             'state' => fake()->randomElement(['active', 'inactive']),
             'insurance_expiration' => fake()->dateTimeBetween('-2 years', '+2 years'),
-            'avarage_consumption' => fake()->randomFloat(1, 4, 10)
         ]);
 
         Vehicle::factory()->count(10)->create();
@@ -114,6 +115,48 @@ class DatabaseSeeder extends Seeder
                 'exchange_rate' => 1,
                 'description' => 'Oil and filter replacement',
             ]);
+        });
+
+        Vehicle::all()->each(function (Vehicle $vehicle) {
+
+            $odometer = max($vehicle->km - 5000, 0);
+
+            for ($i = 0; $i < 10; $i++) {
+
+                $distance = random_int(300, 700);
+
+                $odometer += $distance;
+
+                $consumption = fake()->randomFloat(
+                    2,
+                    5.3,
+                    10.0
+                );
+
+                $liters = round(
+                    ($consumption / 100) * $distance,
+                    2
+                );
+
+                $pricePerLiter = fake()->randomFloat(
+                    2,
+                    580,
+                    650
+                );
+
+                Fueling::factory()->create([
+                    'vehicle_id' => $vehicle->id,
+                    'fueling_date' => now()->subMonths(9 - $i),
+                    'liters' => $liters,
+                    'price_per_liter' => $pricePerLiter,
+                    'total_cost' => round(
+                        $liters * $pricePerLiter,
+                        2
+                    ),
+                    'currency' => 'HUF',
+                    'odometer' => $odometer,
+                ]);
+            }
         });
     }
 }

@@ -22,8 +22,7 @@ class Vehicle extends Model
         'km',
         'license_plate',
         'state',
-        'insurance_expiration',
-        'avarage_consumption',
+        'insurance_expiration'
     ];
 
     protected function casts(): array
@@ -62,5 +61,10 @@ class Vehicle extends Model
     public function services()
     {
         return $this->hasMany(VehicleService::class);
+    }
+
+    public function fuelings(): HasMany
+    {
+        return $this->hasMany(Fueling::class);
     }
 }
