@@ -114,27 +114,54 @@ class CostService
         $yearly = [];
 
         foreach ($services as $service) {
-            $year = \Carbon\Carbon::parse($service['date'])->year;
 
-            $yearly[$year]['service'] =
-                ($yearly[$year]['service'] ?? 0) + $service['cost'];
+            $year = \Carbon\Carbon::parse(
+                $service['date']
+            )->year;
+
+            if (!isset($yearly[$year])) {
+                $yearly[$year] = [
+                    'year' => $year,
+                    'service' => 0,
+                    'fueling' => 0,
+                    'total' => 0,
+                ];
+            }
+
+            $yearly[$year]['service'] += $service['cost'];
         }
+
 
         foreach ($fuelings as $fueling) {
+
             $year = \Carbon\Carbon::parse($fueling['date'])->year;
 
-            $yearly[$year]['fueling'] =
-                ($yearly[$year]['fueling'] ?? 0) + $fueling['cost'];
+            if (!isset($yearly[$year])) {
+                $yearly[$year] = [
+                    'year' => $year,
+                    'service' => 0,
+                    'fueling' => 0,
+                    'total' => 0,
+                ];
+            }
+
+            $yearly[$year]['fueling'] +=
+                $fueling['cost'];
         }
 
-        foreach ($yearly as $year => &$data) {
-            $data['service'] = round($data['service'] ?? 0, 2);
-            $data['fueling'] = round($data['fueling'] ?? 0, 2);
+
+        foreach ($yearly as &$data) {
+
+            $data['service'] = round($data['service'], 2);
+
+            $data['fueling'] = round($data['fueling'], 2);
 
             $data['total'] = round($data['service'] + $data['fueling'], 2);
         }
 
-        return $yearly;
+        ksort($yearly);
+
+        return array_values($yearly);
     }
 
     public function getTotalCost(Vehicle $vehicle, string $currency): float

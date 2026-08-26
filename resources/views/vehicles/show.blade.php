@@ -262,9 +262,21 @@
                 Fueling History
             </h5>
 
-            <span class="badge bg-light text-dark">
-                {{ $vehicle->fuelings->count() }} fuelings
-            </span>
+            <div class="d-flex align-items-center gap-2">
+
+                <span class="badge bg-light text-dark">
+                    {{ $vehicle->fuelings->count() }} fuelings
+                </span>
+
+                <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal"
+                    data-bs-target="#addFuelingModal">
+
+                    <i class="fas fa-plus"></i>
+                    Add Fueling
+
+                </button>
+
+            </div>
 
         </div>
 
@@ -285,6 +297,7 @@
                                 <th>Price / Liter</th>
                                 <th>Total Cost</th>
                                 <th>Consumption</th>
+                                <th class="text-end">Actions</th>
                             </tr>
                         </thead>
 
@@ -295,6 +308,9 @@
                             @endphp
 
                             @foreach ($fuelings as $index => $fueling)
+                                @include('vehicles.partials.fueling-edit-modal', [
+                                    'fueling' => $fueling,
+                                ])
                                 @php
                                     $previousFueling = $index > 0 ? $fuelings[$index - 1] : null;
 
@@ -352,6 +368,32 @@
                                         @endif
                                     </td>
 
+                                    <td class="text-end">
+
+                                        <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal"
+                                            data-bs-target="#editFueling{{ $fueling->id }}">
+
+                                            <i class="fas fa-edit"></i>
+
+                                        </button>
+
+                                        <form action="{{ route('fuelings.destroy', $fueling) }}" method="POST"
+                                            class="d-inline">
+
+                                            @csrf
+                                            @method('DELETE')
+
+                                            <button type="submit" class="btn btn-danger btn-sm"
+                                                onclick="return confirm('Are you sure you want to delete this fueling?')">
+
+                                                <i class="fas fa-trash"></i>
+
+                                            </button>
+
+                                        </form>
+
+                                    </td>
+
                                 </tr>
                             @endforeach
 
@@ -372,6 +414,155 @@
                 </div>
 
             @endif
+
+        </div>
+
+    </div>
+
+    <div class="modal fade" id="addFuelingModal" tabindex="-1" aria-hidden="true">
+
+        @php
+            $lastFueling = $vehicle->fuelings->sortByDesc('odometer')->first();
+
+            $lastOdometer = $lastFueling?->odometer ?? $vehicle->km;
+            $lastPricePerLiter = $lastFueling?->price_per_liter;
+            $defaultCurrency = old('currency', $lastFueling?->currency ?? 'HUF');
+        @endphp
+
+        <div class="modal-dialog">
+
+            <div class="modal-content">
+
+                <form action="{{ route('vehicles.fuelings.store', $vehicle) }}" method="POST">
+
+                    @csrf
+
+                    <div class="modal-header bg-primary text-white">
+
+                        <h5 class="modal-title">
+                            <i class="fas fa-gas-pump"></i>
+                            Add Fueling
+                        </h5>
+
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal">
+                        </button>
+
+                    </div>
+
+                    <div class="modal-body">
+
+                        <div class="mb-3">
+                            <label for="fueling_date" class="form-label">
+                                Fueling Date
+                            </label>
+
+                            <input type="date" name="fueling_date" id="fueling_date" class="form-control"
+                                value="{{ old('fueling_date') }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="odometer" class="form-label">
+                                Odometer
+                            </label>
+                            @php
+                                $lastOdometer =
+                                    $vehicle->fuelings->sortByDesc('odometer')->first()?->odometer ?? $vehicle->km;
+                            @endphp
+
+                            <input type="number" name="odometer" id="odometer" class="form-control"
+                                min="{{ $lastOdometer }}" value="{{ old('odometer', $lastOdometer) }}" required>
+                        </div>
+
+                        <div class="row">
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+
+                                    <label for="liters" class="form-label">
+                                        Liters
+                                    </label>
+
+                                    <input type="number" name="liters" id="liters" class="form-control"
+                                        step="0.01" min="0.01" value="{{ old('liters') }}" required>
+
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+
+                                    <label for="price_per_liter" class="form-label">
+                                        Price / Liter
+                                    </label>
+
+                                    <input type="number" name="price_per_liter" id="price_per_liter"
+                                        class="form-control" step="0.01" min="0"
+                                        value="{{ old('price_per_liter', $lastPricePerLiter) }}" required>
+
+                                    @if ($lastPricePerLiter !== null)
+                                        <small class="text-muted">
+                                            Last price:
+                                            {{ number_format($lastPricePerLiter, 2, '.', ' ') }}
+                                            {{ $lastFueling->currency }}/L
+                                        </small>
+                                    @endif
+
+                                </div>
+                            </div>
+
+                        </div>
+
+
+
+                        <div class="mb-3">
+
+                            <label for="fueling_currency" class="form-label">
+                                Currency
+                            </label>
+                            @php
+                                $defaultCurrency = old('currency', $lastFueling?->currency ?? 'HUF');
+                            @endphp
+
+                            <select name="currency" id="fueling_currency" class="form-select" required>
+
+                                <option value="HUF" @selected($defaultCurrency === 'HUF')>HUF</option>
+                                <option value="EUR" @selected($defaultCurrency === 'EUR')>EUR</option>
+                                <option value="USD" @selected($defaultCurrency === 'USD')>USD</option>
+                                <option value="GBP" @selected($defaultCurrency === 'GBP')>GBP</option>
+                                <option value="CHF" @selected($defaultCurrency === 'CHF')>CHF</option>
+
+                            </select>
+
+                        </div>
+
+                        <div class="mb-3">
+
+                            <label for="fueling_note" class="form-label">
+                                Note
+                            </label>
+
+                            <textarea name="note" id="fueling_note" class="form-control" rows="3" placeholder="Optional note">{{ old('note') }}</textarea>
+
+                        </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            Cancel
+                        </button>
+
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i>
+                            Save Fueling
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
 
         </div>
 
@@ -422,8 +613,8 @@
                                         Cost
                                     </label>
 
-                                    <input type="number" name="cost" id="cost" class="form-control" step="0.01"
-                                        min="0" value="{{ old('cost') }}" required>
+                                    <input type="number" name="cost" id="cost" class="form-control"
+                                        step="0.01" min="0" value="{{ old('cost') }}" required>
 
                                 </div>
 
