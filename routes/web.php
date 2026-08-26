@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VehicleServiceController;
+use App\Http\Controllers\FuelingController;
 
 
 Route::get('/', function () {
@@ -48,3 +49,18 @@ Route::get(
     '/vehicles/{vehicle}/service-cost-summary',
     [VehicleController::class, 'serviceCostSummary']
 )->name('vehicles.service-cost-summary');
+
+Route::post(
+    '/vehicles/{vehicle}/fuelings',
+    [FuelingController::class, 'store']
+)->name('vehicles.fuelings.store');
+
+Route::put(
+    '/fuelings/{fueling}',
+    [FuelingController::class, 'update']
+)->name('fuelings.update');
+
+Route::delete(
+    '/fuelings/{fueling}',
+    [FuelingController::class, 'destroy']
+)->name('fuelings.destroy');
