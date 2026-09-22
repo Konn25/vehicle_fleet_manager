@@ -27,19 +27,12 @@ class FuelingController extends Controller
 
         $validated['vehicle_id'] = $vehicle->id;
 
-        $validated['total_cost'] = round(
-            $validated['liters'] * $validated['price_per_liter'],
-            2
-        );
-
+        $validated['total_cost'] = round($validated['liters'] * $validated['price_per_liter'], 2);
 
         $lastOdometer = $vehicle->fuelings()
             ->max('odometer');
 
-        if (
-            $lastOdometer !== null &&
-            $validated['odometer'] <= $lastOdometer
-        ) {
+        if ($lastOdometer !== null && $validated['odometer'] <= $lastOdometer) {
             throw ValidationException::withMessages([
                 'odometer' =>
                 'Odometer must be greater than the last recorded value (' .
@@ -47,6 +40,7 @@ class FuelingController extends Controller
                     ' km).',
             ]);
         }
+
         Fueling::create($validated);
 
         return redirect()

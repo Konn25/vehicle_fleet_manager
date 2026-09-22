@@ -3,495 +3,307 @@
 @section('title', 'Vehicles')
 
 @section('content')
-    @include('vehicles.partials.create-modal')
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    @php
+        $vehicleCount = $vehicles->count();
+        $activeCount = $vehicles->where('state', 'active')->count();
+        $serviceCount = $vehicles->where('state', 'service')->count();
+        $inactiveCount = $vehicles->where('state', 'inactive')->count();
+    @endphp
 
-        <div>
-            <h1 class="fw-bold">
-                🚗 Vehicle Fleet
-            </h1>
-            <p class="text-muted">
-                Manage your company vehicles
-            </p>
-        </div>
+    <main class="fleet-page fleet-index-page">
+        <section class="fleet-hero mb-4" aria-labelledby="fleet-page-title">
+            <div class="fleet-hero__glow fleet-hero__glow--one"></div>
+            <div class="fleet-hero__glow fleet-hero__glow--two"></div>
 
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createVehicleModal">
+            <div class="position-relative d-flex flex-column flex-lg-row align-items-lg-end justify-content-between gap-4">
+                <div>
+                    <span class="fleet-eyebrow">
+                        <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
+                        Fleet overview
+                    </span>
+                    <h1 id="fleet-page-title" class="fleet-hero__title mt-3 mb-2">Vehicle Fleet</h1>
+                    <p class="fleet-hero__subtitle mb-0">
+                        Keep every vehicle, deadline and operating detail in one clear view.
+                    </p>
+                </div>
 
-            <i class="fas fa-plus"></i>
+                <button class="btn fleet-btn fleet-btn--light" type="button" data-bs-toggle="modal"
+                    data-bs-target="#createVehicleModal">
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                    <span>Add vehicle</span>
+                </button>
+            </div>
 
-            Add Vehicle
+            <div class="fleet-stats mt-4">
+                <div class="fleet-stat">
+                    <span class="fleet-stat__icon fleet-stat__icon--blue">
+                        <i class="fa-solid fa-car-side" aria-hidden="true"></i>
+                    </span>
+                    <span><strong>{{ $vehicleCount }}</strong><small>Total vehicles</small></span>
+                </div>
+                <div class="fleet-stat">
+                    <span class="fleet-stat__icon fleet-stat__icon--green">
+                        <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                    </span>
+                    <span><strong>{{ $activeCount }}</strong><small>Active</small></span>
+                </div>
+                <div class="fleet-stat">
+                    <span class="fleet-stat__icon fleet-stat__icon--amber">
+                        <i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i>
+                    </span>
+                    <span><strong>{{ $serviceCount }}</strong><small>In service</small></span>
+                </div>
+                <div class="fleet-stat">
+                    <span class="fleet-stat__icon fleet-stat__icon--slate">
+                        <i class="fa-solid fa-circle-pause" aria-hidden="true"></i>
+                    </span>
+                    <span><strong>{{ $inactiveCount }}</strong><small>Inactive</small></span>
+                </div>
+            </div>
+        </section>
 
-        </button>
-
-    </div>
-
-    @push('scripts')
         @if ($errors->any())
-            <script>
-                document.addEventListener('DOMContentLoaded', function() {
-
-                    let modal = new bootstrap.Modal(
-                        document.getElementById('createVehicleModal')
-                    );
-
-                    modal.show();
-
-                });
-            </script>
+            <div class="alert fleet-alert fleet-alert--danger alert-dismissible fade show" role="alert">
+                <div class="d-flex gap-3">
+                    <i class="fa-solid fa-circle-exclamation mt-1" aria-hidden="true"></i>
+                    <div>
+                        <strong>Please check the vehicle details.</strong>
+                        <ul class="mb-0 mt-1 ps-3">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
         @endif
-    @endpush
 
-    @if ($errors->any())
+        @if (session('success'))
+            <div class="alert fleet-alert fleet-alert--success alert-dismissible fade show" role="alert">
+                <i class="fa-solid fa-circle-check me-2" aria-hidden="true"></i>
+                {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
 
-        <div class="alert alert-danger">
+        <section class="fleet-toolbar mb-4" aria-label="Vehicle filters">
+            <div class="fleet-search">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                <label for="vehicleSearch" class="visually-hidden">Search vehicles</label>
+                <input id="vehicleSearch" type="search" class="form-control"
+                    placeholder="Search by brand, plate or engine..." autocomplete="off">
+            </div>
 
-            <ul class="mb-0">
-
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-
-            </ul>
-
-        </div>
-
-    @endif
-
-    @if (session('success'))
-        <div class="alert alert-success alert-dismissible fade show">
-
-            {{ session('success') }}
-
-            <button class="btn-close" data-bs-dismiss="alert"></button>
-
-        </div>
-    @endif
-
-    @include('vehicles.partials.create-modal')
-    <div class="row">
+            <div class="fleet-filter-group" role="group" aria-label="Filter by status">
+                <button type="button" class="fleet-filter is-active" data-vehicle-filter="all">All</button>
+                <button type="button" class="fleet-filter" data-vehicle-filter="active">Active</button>
+                <button type="button" class="fleet-filter" data-vehicle-filter="service">Service</button>
+                <button type="button" class="fleet-filter" data-vehicle-filter="inactive">Inactive</button>
+            </div>
+        </section>
 
         @if ($vehicles->count() > 0)
+            <section id="vehicleGrid" class="row g-4" aria-live="polite">
+                @foreach ($vehicles as $vehicle)
+                    @php
+                        $state = strtolower($vehicle->state ?? 'unknown');
+                        $stateConfig = match ($state) {
+                            'active' => ['label' => 'Active', 'icon' => 'fa-circle-check', 'class' => 'active'],
+                            'service' => ['label' => 'Service', 'icon' => 'fa-screwdriver-wrench', 'class' => 'service'],
+                            'inactive' => ['label' => 'Inactive', 'icon' => 'fa-circle-pause', 'class' => 'inactive'],
+                            default => ['label' => ucfirst($vehicle->state ?? 'Unknown'), 'icon' => 'fa-circle-question', 'class' => 'unknown'],
+                        };
 
-            @foreach ($vehicles as $vehicle)
-                <div class="col-xl-4 col-lg-6 mb-4">
+                        $insuranceDate = filled($vehicle->insurance_expiration)
+                            ? \Carbon\Carbon::parse($vehicle->insurance_expiration)->startOfDay()
+                            : null;
+                        $daysLeft = $insuranceDate ? now()->startOfDay()->diffInDays($insuranceDate, false) : null;
+                        $insuranceClass = $daysLeft === null ? 'neutral' : ($daysLeft < 0 ? 'danger' : ($daysLeft <= 30 ? 'warning' : 'success'));
+                        $searchText = strtolower(collect([
+                            $vehicle->brand->name ?? '',
+                            $vehicle->license_plate,
+                            $vehicle->engine_type,
+                            $vehicle->fuelType->name ?? '',
+                        ])->join(' '));
+                    @endphp
 
-                    <div class="card shadow-sm h-100 vehicle-card">
-
-                        <div class="card-header d-flex justify-content-between align-items-center">
-
-                            <h5 class="mb-0 fw-bold">
-                                {{ $vehicle->brand->name ?? 'Unknown Brand' }}
-                            </h5>
-
-
-                            @switch(strtolower($vehicle->state))
-                                @case('active')
-                                    <span class="badge bg-success">
-                                        <i class="fas fa-check-circle"></i>
-                                        Active
-                                    </span>
-                                @break
-
-                                @case('service')
-                                    <span class="badge bg-warning text-dark">
-                                        <i class="fas fa-tools"></i>
-                                        Service
-                                    </span>
-                                @break
-
-                                @case('inactive')
-                                    <span class="badge bg-secondary">
-                                        <i class="fas fa-ban"></i>
-                                        Inactive
-                                    </span>
-                                @break
-
-                                @default
-                                    <span class="badge bg-danger">
-                                        {{ $vehicle->state }}
-                                    </span>
-                            @endswitch
-
-                        </div>
-
-
-                        <div class="card-body">
-
-
-                            <div class="text-center mb-3">
-
-                                <i class="fas fa-car fa-4x text-primary"></i>
-
-                                <h4 class="mt-2">
-                                    {{ $vehicle->license_plate }}
-                                </h4>
-
-                            </div>
-
-
-
-                            <div class="row text-center">
-
-
-                                <div class="col-6 mb-3">
-
-                                    <small class="text-muted">
-                                        Year
-                                    </small>
-
-                                    <div class="fw-bold">
-                                        {{ $vehicle->year }}
-                                    </div>
-
-                                </div>
-
-
-                                <div class="col-6 mb-3">
-
-                                    <small class="text-muted">
-                                        Fuel
-                                    </small>
-
-                                    <div class="fw-bold">
-                                        {{ $vehicle->fuelType->name ?? '-' }}
-                                    </div>
-
-                                </div>
-
-
-                                <div class="col-6 mb-3">
-
-                                    <small class="text-muted">
-                                        Mileage
-                                    </small>
-
-                                    <div class="fw-bold">
-                                        {{ number_format($vehicle->km, 0, ',', ' ') }} km
-                                    </div>
-
-                                </div>
-
-
-                                <div class="col-6 mb-3">
-
-                                    <small class="text-muted">
-                                        Engine
-                                    </small>
-
-                                    <div class="fw-bold">
-                                        {{ $vehicle->engine_type }}
-                                    </div>
-
-                                </div>
-
-
-                            </div>
-
-
-
-                            <hr>
-
-
-                            <div class="mb-2">
-                                <i class="fas fa-gas-pump text-primary"></i>
-                                Consumption:
-
-                                <strong>
-                                    @if ($consumptions[$vehicle->id] !== null)
-                                        {{ number_format($consumptions[$vehicle->id], 2, '.', ' ') }}
-                                        L/100 km
-                                    @else
-                                        <span class="text-muted">
-                                            No data
+                    <div class="col-12 col-md-6 col-xl-4 vehicle-grid-item" data-state="{{ $state }}"
+                        data-search="{{ $searchText }}">
+                        <article class="vehicle-card h-100">
+                            <div class="vehicle-card__topline vehicle-card__topline--{{ $stateConfig['class'] }}"></div>
+                            <div class="vehicle-card__body">
+                                <div class="d-flex align-items-start justify-content-between gap-3">
+                                    <div class="d-flex align-items-center gap-3 min-w-0">
+                                        <span class="vehicle-card__avatar">
+                                            <i class="fa-solid fa-car-side" aria-hidden="true"></i>
                                         </span>
-                                    @endif
-                                </strong>
+                                        <div class="min-w-0">
+                                            <p class="vehicle-card__brand mb-1 text-truncate">{{ $vehicle->brand->name ?? 'Unknown brand' }}</p>
+                                            <h2 class="vehicle-card__plate mb-0 text-truncate">{{ $vehicle->license_plate }}</h2>
+                                        </div>
+                                    </div>
+                                    <span class="fleet-status fleet-status--{{ $stateConfig['class'] }}">
+                                        <i class="fa-solid {{ $stateConfig['icon'] }}" aria-hidden="true"></i>
+                                        {{ $stateConfig['label'] }}
+                                    </span>
+                                </div>
+
+                                <div class="vehicle-specs my-4">
+                                    <div class="vehicle-spec">
+                                        <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+                                        <span><small>Year</small><strong>{{ $vehicle->year ?? '—' }}</strong></span>
+                                    </div>
+                                    <div class="vehicle-spec">
+                                        <i class="fa-solid fa-gas-pump" aria-hidden="true"></i>
+                                        <span><small>Fuel</small><strong>{{ $vehicle->fuelType->name ?? '—' }}</strong></span>
+                                    </div>
+                                    <div class="vehicle-spec">
+                                        <i class="fa-solid fa-gauge-high" aria-hidden="true"></i>
+                                        <span><small>Mileage</small><strong>{{ number_format($vehicle->km ?? 0, 0, ',', ' ') }} km</strong></span>
+                                    </div>
+                                    <div class="vehicle-spec">
+                                        <i class="fa-solid fa-gears" aria-hidden="true"></i>
+                                        <span><small>Engine</small><strong>{{ $vehicle->engine_type ?: '—' }}</strong></span>
+                                    </div>
+                                </div>
+
+                                <div class="vehicle-card__insights">
+                                    <div class="vehicle-insight">
+                                        <span class="vehicle-insight__icon"><i class="fa-solid fa-droplet" aria-hidden="true"></i></span>
+                                        <span>
+                                            <small>Average consumption</small>
+                                            <strong>
+                                                @if (($consumptions[$vehicle->id] ?? null) !== null)
+                                                    {{ number_format($consumptions[$vehicle->id], 2, '.', ' ') }} L/100 km
+                                                @else
+                                                    No data yet
+                                                @endif
+                                            </strong>
+                                        </span>
+                                    </div>
+                                    <div class="vehicle-insight vehicle-insight--{{ $insuranceClass }}">
+                                        <span class="vehicle-insight__icon"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></span>
+                                        <span>
+                                            <small>Insurance</small>
+                                            <strong>
+                                                @if ($daysLeft === null)
+                                                    No date set
+                                                @elseif ($daysLeft < 0)
+                                                    Expired {{ abs($daysLeft) }} days ago
+                                                @elseif ($daysLeft <= 30)
+                                                    {{ $daysLeft }} days remaining
+                                                @else
+                                                    {{ $insuranceDate->format('M j, Y') }}
+                                                @endif
+                                            </strong>
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
 
-                            @php
-                                $insuranceDate = \Carbon\Carbon::parse($vehicle->insurance_expiration)->startOfDay();
-                                $today = now()->startOfDay();
-
-                                $daysLeft = $today->diffInDays($insuranceDate, false);
-                            @endphp
-
-
-                            <div>
-
-                                @if ($daysLeft < 0)
-                                    <i class="fas fa-shield-alt text-danger"></i>
-
-                                    Insurance:
-
-                                    <strong class="text-danger">
-                                        Expired ({{ abs($daysLeft) }} days ago)
-                                    </strong>
-                                @elseif($daysLeft <= 30)
-                                    <i class="fas fa-shield-alt text-warning"></i>
-
-                                    Insurance:
-
-                                    <strong class="text-warning">
-                                        {{ $vehicle->insurance_expiration }}
-                                        ({{ $daysLeft }} days left)
-                                    </strong>
-                                @else
-                                    <i class="fas fa-shield-alt text-success"></i>
-
-                                    Insurance:
-
-                                    <strong class="text-success">
-                                        {{ $vehicle->insurance_expiration }}
-                                    </strong>
-                                @endif
-
-                            </div>
-
-
-                        </div>
-
-
-
-                        <div class="card-footer text-end">
-
-
-                            <a href="{{ route('vehicles.show', $vehicle) }}" class="btn btn-info btn-sm">
-                                <i class="fas fa-eye"></i>
-                            </a>
-
-
-                            <button class="btn btn-warning btn-sm" data-bs-toggle="modal"
-                                data-bs-target="#editVehicle{{ $vehicle->id }}">
-
-                                <i class="fas fa-edit"></i>
-
-                            </button>
-
-                            <form action="{{ route('vehicles.destroy', $vehicle) }}" method="POST" class="d-inline">
-
-                                @csrf
-                                @method('DELETE')
-
-                                <button type="submit" class="btn btn-danger btn-sm"
-                                    onclick="return confirm('Are you sure you want to delete this vehicle?')">
-
-                                    <i class="fas fa-trash"></i>
-
+                            <footer class="vehicle-card__footer">
+                                <a href="{{ route('vehicles.show', $vehicle) }}" class="btn fleet-btn fleet-btn--primary flex-grow-1">
+                                    View details <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                                </a>
+                                <button type="button" class="btn fleet-icon-btn" data-bs-toggle="modal"
+                                    data-bs-target="#editVehicle{{ $vehicle->id }}" aria-label="Edit {{ $vehicle->license_plate }}"
+                                    title="Edit vehicle">
+                                    <i class="fa-solid fa-pen" aria-hidden="true"></i>
                                 </button>
-
-                            </form>
-
-
-                        </div>
-
-
+                                <form action="{{ route('vehicles.destroy', $vehicle) }}" method="POST">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn fleet-icon-btn fleet-icon-btn--danger"
+                                        aria-label="Delete {{ $vehicle->license_plate }}" title="Delete vehicle"
+                                        onclick="return confirm('Are you sure you want to delete this vehicle?')">
+                                        <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+                                    </button>
+                                </form>
+                            </footer>
+                        </article>
                     </div>
 
-                </div>
-                @include('vehicles.partials.edit-modal')
-            @endforeach
+                    @include('vehicles.partials.edit-modal')
+                @endforeach
+            </section>
+
+            <div id="vehicleNoResults" class="fleet-empty d-none" role="status">
+                <span class="fleet-empty__icon"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></span>
+                <h2>No matching vehicles</h2>
+                <p>Try another search term or select a different status.</p>
+                <button type="button" class="btn fleet-btn fleet-btn--primary" id="clearVehicleFilters">Clear filters</button>
+            </div>
         @else
-            <div class="col-12">
-
-                <div class="alert alert-info text-center">
-                    No vehicles found.
-                </div>
-
-            </div>
-
+            <section class="fleet-empty">
+                <span class="fleet-empty__icon"><i class="fa-solid fa-car-side" aria-hidden="true"></i></span>
+                <h2>Your fleet is ready to grow</h2>
+                <p>Add your first vehicle to start tracking mileage, costs and insurance.</p>
+                <button type="button" class="btn fleet-btn fleet-btn--primary" data-bs-toggle="modal"
+                    data-bs-target="#createVehicleModal">
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i> Add first vehicle
+                </button>
+            </section>
         @endif
+    </main>
 
-
-    </div>
-
-
-    <div class="modal fade" id="createVehicleModal" tabindex="-1">
-
-        <div class="modal-dialog modal-xl">
-
-            <div class="modal-content">
-
-                <form action="{{ route('vehicles.store') }}" method="POST">
-
-                    @csrf
-
-                    <div class="modal-header bg-primary text-white">
-
-                        <h5 class="modal-title">
-                            <i class="fas fa-car"></i>
-                            Add New Vehicle
-                        </h5>
-
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-
-                    </div>
-
-                    <div class="modal-body">
-
-                        <div class="row">
-
-                            <div class="col-md-6">
-
-                                <div class="mb-3">
-                                    <label class="form-label">Brand</label>
-
-                                    <select name="brand_id" class="form-select" required>
-
-                                        <option value="">Select brand</option>
-
-                                        @foreach ($brands as $brand)
-                                            <option value="{{ $brand->id }}">
-                                                {{ $brand->name }}
-                                            </option>
-                                        @endforeach
-
-                                    </select>
-                                </div>
-
-                                <div class="mb-3">
-
-                                    <label class="form-label">License Plate</label>
-
-                                    <input type="text" name="license_plate" class="form-control" required
-                                        value="{{ old('license_plate') }}">
-
-                                </div>
-
-                                <div class="mb-3">
-
-                                    <label class="form-label">Fuel Type</label>
-
-                                    <select name="fuel_type_id" class="form-select" required>
-
-                                        <option value="">Select fuel</option>
-
-                                        @foreach ($fuelTypes as $fuel)
-                                            <option value="{{ $fuel->id }}">
-                                                {{ $fuel->name }}
-                                            </option>
-                                        @endforeach
-
-                                    </select>
-
-                                </div>
-
-                                <div class="mb-3">
-
-                                    <label class="form-label">Engine</label>
-
-                                    <input type="text" name="engine_type" class="form-control"
-                                        value="{{ old('engine_type') }}">
-
-                                </div>
-
-                                <div class="mb-3">
-
-                                    <label class="form-label">Year</label>
-
-                                    <input type="number" name="year" class="form-control" min="1910"
-                                        max="{{ date('Y') }}"
-                                        value="{{ old('year') }}>
-
-                                </div>
-
-                            </div>
-
-                            <div class="col-md-6">
-
-                                    <div class="mb-3">
-
-                                        <label class="form-label">
-                                            Kilometer (km)
-                                        </label>
-
-                                        <input type="number" name="km" class="form-control"
-                                            value="{{ old('km') }}>
-
-                                </div>
-
-                                <div class="mb-3">
-
-                                        <label class="form-label">
-                                            Tank Capacity (L)
-                                        </label>
-
-                                        <input type="number" name="tank_capacity" class="form-control"
-                                            value="{{ old('tank_capacity') }}>
-
-                                </div>
-
-
-                                    <div class="mb-3">
-
-                                        <label class="form-label">
-                                            Insurance Expiration
-                                        </label>
-
-                                        <input type="date" name="insurance_expiration" class="form-control"
-                                            value="{{ old('insurance_expiration') }}">
-
-                                    </div>
-
-                                    <div class="mb-3">
-
-                                        <label class="form-label">
-                                            Status
-                                        </label>
-
-                                        <select name="state" class="form-select">
-
-                                            <option value="active">Active</option>
-                                            <option value="service">Service</option>
-                                            <option value="inactive">Inactive</option>
-
-                                        </select>
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                        <div class="modal-footer">
-
-                            <button class="btn btn-secondary" data-bs-dismiss="modal">
-
-                                Cancel
-
-                            </button>
-
-                            <button class="btn btn-success">
-
-                                <i class="fas fa-save"></i>
-
-                                Save Vehicle
-
-                            </button>
-
-                        </div>
-
-                </form>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
+    @include('vehicles.partials.create-modal')
 @endsection
 
-
 @push('styles')
-    <style>
-        .vehicle-card {
-            transition: transform .2s ease;
-        }
+    @include('vehicles.partials.page-styles')
+@endpush
 
-        .vehicle-card:hover {
-            transform: translateY(-5px);
-        }
-    </style>
+@push('scripts')
+    @if ($errors->any())
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('createVehicleModal')).show();
+            });
+        </script>
+    @endif
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('vehicleSearch');
+            const filterButtons = [...document.querySelectorAll('[data-vehicle-filter]')];
+            const vehicleItems = [...document.querySelectorAll('.vehicle-grid-item')];
+            const noResults = document.getElementById('vehicleNoResults');
+            const clearButton = document.getElementById('clearVehicleFilters');
+            let activeFilter = 'all';
+
+            if (!searchInput || vehicleItems.length === 0) return;
+
+            const applyFilters = () => {
+                const query = searchInput.value.trim().toLocaleLowerCase();
+                let visibleCount = 0;
+
+                vehicleItems.forEach((item) => {
+                    const matchesSearch = item.dataset.search.includes(query);
+                    const matchesState = activeFilter === 'all' || item.dataset.state === activeFilter;
+                    const isVisible = matchesSearch && matchesState;
+                    item.classList.toggle('d-none', !isVisible);
+                    if (isVisible) visibleCount += 1;
+                });
+
+                noResults?.classList.toggle('d-none', visibleCount !== 0);
+            };
+
+            searchInput.addEventListener('input', applyFilters);
+            filterButtons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    activeFilter = button.dataset.vehicleFilter;
+                    filterButtons.forEach((item) => item.classList.toggle('is-active', item === button));
+                    applyFilters();
+                });
+            });
+            clearButton?.addEventListener('click', () => {
+                searchInput.value = '';
+                activeFilter = 'all';
+                filterButtons.forEach((item) => item.classList.toggle('is-active', item.dataset.vehicleFilter === 'all'));
+                applyFilters();
+                searchInput.focus();
+            });
+        });
+    </script>
 @endpush

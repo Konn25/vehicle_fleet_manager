@@ -1,6 +1,6 @@
-<div class="modal fade" id="editFueling{{ $fueling->id }}" tabindex="-1" aria-hidden="true">
+<div class="modal fade fleet-modal" id="editFueling{{ $fueling->id }}" tabindex="-1" aria-hidden="true">
 
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
 
         <div class="modal-content">
 
@@ -9,14 +9,14 @@
                 @csrf
                 @method('PUT')
 
-                <div class="modal-header bg-warning">
+                <div class="modal-header">
 
-                    <h5 class="modal-title">
-                        <i class="fas fa-gas-pump"></i>
+                    <h5 class="modal-title d-flex align-items-center gap-2">
+                        <span class="fleet-modal-icon"><i class="fa-solid fa-gas-pump" aria-hidden="true"></i></span>
                         Edit Fueling
                     </h5>
 
-                    <button type="button" class="btn-close" data-bs-dismiss="modal">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
                     </button>
 
                 </div>
@@ -101,13 +101,13 @@
 
                 <div class="modal-footer">
 
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <button type="button" class="btn fleet-btn fleet-btn--soft" data-bs-dismiss="modal">
 
                         Cancel
 
                     </button>
 
-                    <button type="submit" class="btn btn-warning">
+                    <button type="submit" class="btn fleet-btn fleet-btn--primary">
 
                         <i class="fas fa-save"></i>
                         Update Fueling
